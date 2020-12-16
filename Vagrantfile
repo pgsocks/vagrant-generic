@@ -1,35 +1,30 @@
 #!/usr/bin/ruby -w
 
-require 'yaml'
+require 'json'
+require 'io/console'
 
-hosts = YAML.load_file('vagrant_hosts.yml')
+json = IO.popen('ansible-inventory --list').read()
+project = JSON.parse(json)
 
-Vagrant.configure("2") do |config|
+Vagrant.configure('2') do |config|
 
-  hosts.each do |host|
-    config.vm.define host['name'] do |node|
+  project['_meta']['hostvars'].each_with_index do |host, index|
 
-      node.vm.box = host['box']
-      node.vm.hostname = host['name']
-      if host.has_key?('box_url')
-        node.vm.box_url = host['box_url']
-      end
+    hostvars = host[1]
+    hostname = host[0]
 
-      if host.has_key?('private_networks')
-        host['private_networks'].each do |network|
-          node.vm.network :private_network, network
-        end
-      end
+    config.vm.define hostname do |node|
 
-      if host.has_key?('public_networks')
-        host['private_networks'].each do |network|
-          node.vm.network :private_network, network
-        end
+      node.vm.hostname = hostname
+
+      node.vm.box = hostvars['vagrant_box']
+      if hostvars.has_key?('vagrant_box_url')
+        node.vm.box_url = hostvars['vagrant_box_url']
       end
 
       node.vm.provider :libvirt do |libvirt|
-        libvirt.memory = host['memory'] ||= 2048
-        libvirt.cpus = host['cpus'] ||= 2
+        libvirt.memory = hostvars['vagrant_memory'] ||= 2048
+        libvirt.cpus = hostvars['vagrant_cpus'] ||= 2
         libvirt.driver = 'kvm'
       end
 
