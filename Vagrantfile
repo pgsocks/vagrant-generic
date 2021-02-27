@@ -22,6 +22,11 @@ Vagrant.configure('2') do |config|
         node.vm.box_url = hostvars['vagrant_box_url']
       end
 
+      node.vm.network :private_network,
+        :libvirt__network_name => 'vagrant-ansible',
+        :ip => hostvars['ansible_host'],
+        :libvirt__dhcp_enabled => false
+
       node.vm.provider :libvirt do |libvirt|
         libvirt.memory = hostvars['vagrant_memory'] ||= 2048
         libvirt.cpus = hostvars['vagrant_cpus'] ||= 2
